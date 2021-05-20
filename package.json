@@ -1,11 +1,11 @@
 {
   "name": "replit",
-  "displayName": "replit",
+  "displayName": "replit-revived",
   "description": "VS Code extension for connecting to repls",
   "icon": "images/replit-vs-code-logo.png",
   "version": "0.0.3",
-  "publisher": "masad-frost",
-  "repository": "https://github.com/replit/replit-vscode",
+  "publisher": "roblockhead",
+  "repository": "https://github.com/roblockhead/replit-vscode-revived",
   "engines": {
     "vscode": "^1.52.0"
   },
@@ -15,7 +15,8 @@
   "activationEvents": [
     "onFileSystem:replit",
     "onCommand:replit.openrepl",
-    "onCommand:replit.apikey"
+    "onCommand:replit.apikey",
+    "onCommand:replit.captchakey"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -34,6 +35,11 @@
         "command": "replit.apikey",
         "title": "Add or change API key",
         "category": "Replit"
+      },
+      {
+        "command": "replit.captchakey",
+        "title": "Set the CAPTCHA key",
+        "category": "Replit"
       }
     ],
     "menus": {
@@ -41,6 +47,22 @@
         {
           "command": "replit.shell",
           "when": "workbenchState == workspace"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "replit",
+          "title": "Replit Settings",
+          "icon": "resources/package-explorer.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "replit",
+          "title": "Replit Settings",
+          "icon": "resources/package-explorer.svg"
         }
       ]
     }

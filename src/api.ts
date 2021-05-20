@@ -2,11 +2,11 @@ import fetch from 'node-fetch';
 import { GraphQLClient, gql } from 'graphql-request';
 import { ReplInfo } from './types';
 
-const gqlClient = new GraphQLClient('https://repl.it/graphql/', {});
+const gqlClient = new GraphQLClient('https://replit.com/graphql/', {});
 gqlClient.setHeaders({
-  'X-Requested-With': 'graph',
-  'user-agent': 'lol',
-  referrer: 'https://repl.it',
+  'X-Requested-With': 'Replit VSCode Revived (replit/@RoBlockHead)',
+  'user-agent': 'Replit VSCode Revived (replit/@RoBlockHead)',
+  referrer: 'https://replit.com/@RoBlockHead',
 });
 
 const ReplInfoFromUrlDoc = gql`
@@ -37,8 +37,10 @@ const ReplInfoFromIdDoc = gql`
   }
 `;
 
-async function getReplInfoByUrl(url: string): Promise<ReplInfo> {
-  const result = await gqlClient.request(ReplInfoFromUrlDoc, { url });
+async function getReplInfoByUrl(url: string, userSid?: string): Promise<ReplInfo> {
+  const result = await gqlClient.request(ReplInfoFromUrlDoc, { url }, {
+    cookie: `connect.sid=${userSid}`,
+  });
 
   if (!result.repl) {
     throw new Error('unexpected grqphql response for url');
@@ -51,8 +53,10 @@ async function getReplInfoByUrl(url: string): Promise<ReplInfo> {
   };
 }
 
-async function getReplInfoById(id: string): Promise<ReplInfo> {
-  const result = await gqlClient.request(ReplInfoFromIdDoc, { id });
+async function getReplInfoById(id: string, userSid?: string): Promise<ReplInfo> {
+  const result = await gqlClient.request(ReplInfoFromIdDoc, { id }, {
+    cookie: `connect.sid=${userSid}`,
+  });
 
   if (!result.repl) {
     throw new Error('unexpected grqphql response for url');
@@ -65,9 +69,9 @@ async function getReplInfoById(id: string): Promise<ReplInfo> {
   };
 }
 
-export async function getReplInfo(input: string): Promise<ReplInfo> {
+export async function getReplInfo(input: string, userSid?: string): Promise<ReplInfo> {
   if (input.split('-').length === 5) {
-    return getReplInfoById(input);
+    return getReplInfoById(input, userSid);
   }
 
   // Check if user included full URL using a simple regex
@@ -79,32 +83,43 @@ export async function getReplInfo(input: string): Promise<ReplInfo> {
 
   const [, user, slug] = match;
 
-  return getReplInfoByUrl(`https://repl.it/@${user}/${slug}`);
+  return getReplInfoByUrl(`https://replit.com/@${user}/${slug}`, userSid);
 }
 
-export async function fetchToken(replId: string, apiKey: string): Promise<string> {
-  const r = await fetch(`https://repl.it/api/v0/repls/${replId}/token`, {
-    method: 'POST',
+export async function fetchToken(replId: string, userSid: string, captchaKey?: string): Promise<string> {
+  console.log(`fetching token for ${replId}`);
+  const r = await fetch(`https://replit.com/data/repls/${replId}/get_connection_metadata`, {
     headers: {
-      accept: 'application/json',
-      'content-Type': 'application/json',
-      'user-agent': 'ezcrosis',
-      'x-requested-with': 'ezcrosis',
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'Crosis 2: Electric Boogaloo (replit/@RoBlockHead)',
+      cookie: `connect.sid=${userSid}`,
+      origin: 'https://replit.com',
+      'User-Agent': 'Replit VSCode Revived (replit/@RoBlockHead)',
     },
-    body: JSON.stringify({ apiKey }),
+    method: 'POST',
+    body: JSON.stringify({
+      captcha: captchaKey,
+      clientVersion: '7561851',
+      format: 'pbuf',
+      hCaptchaSiteKey: '473079ba-e99f-4e25-a635-e9b661c7dd3e',
+    }),
   });
   const text = await r.text();
+
+  if (r.status > 399) {
+    if (JSON.parse(text).message?.toLowerCase().indexOf('captcha failed') !== -1) {
+      throw new Error(`Captcha failed, please set a captcha key. error: ${text}`);
+    } else throw new Error(`Repl.it: ${r.status} Error Failed to open Repl. Error: ${JSON.parse(text).message}`);
+  }
+  console.log(`Token Obtained: ${text}`);
 
   let res;
   try {
     res = JSON.parse(text);
+    // console.log(res.token);
   } catch (e) {
     throw new Error(`Invalid JSON while fetching token for ${replId}: ${JSON.stringify(text)}`);
   }
 
-  if (typeof res !== 'string') {
-    throw new Error(`Invalid token response: ${JSON.stringify(res)}`);
-  }
-
-  return res;
+  return JSON.stringify(res);
 }

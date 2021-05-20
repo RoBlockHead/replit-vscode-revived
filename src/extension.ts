@@ -1,5 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import { Client } from '@replit/crosis';
+import { Client, FetchConnectionMetadataError, FetchConnectionMetadataResult, GovalMetadata } from '@replit/crosis';
 import * as vscode from 'vscode';
 import ws from 'ws';
 import { FS } from './fs';
@@ -9,12 +9,13 @@ import { CrosisClient, ReplInfo } from './types';
 import { fetchToken, getReplInfo } from './api';
 
 // Simple key regex. No need to be strict here.
-const validKey = (key: string): boolean => !!key && /[a-zA-Z0-9/=]+:[a-zA-Z0-9/=]+/.test(key);
+// const validKey = (key: string): boolean => !!key && /[a-zA-Z0-9/=]+:[a-zA-Z0-9/=]+/.test(key);
+const validKey = (key: string): boolean => (!!key);
 
 const ensureKey = async (
   store: Options,
   { forceNew }: { forceNew: boolean } = { forceNew: false },
-): Promise<string | null> => {
+): Promise<string | undefined> => {
   if (!forceNew) {
     let storedKey: string;
     try {
@@ -46,6 +47,42 @@ const ensureKey = async (
     await store.set({ key: newKey });
     return newKey;
   }
+};
+
+const ensureCaptcha = async (
+  store: Options,
+  { forceNew }: { forceNew: boolean } = { forceNew: false },
+): Promise<string | null> => {
+  if (!forceNew) {
+    let storedCaptcha: string;
+    try {
+      const captchaKey = await store.get('captchaKey');
+      if (typeof captchaKey === 'string') {
+        storedCaptcha = captchaKey;
+      } else {
+        storedCaptcha = '';
+      }
+    } catch (e) {
+      console.error(e);
+      storedCaptcha = '';
+    }
+
+    if (storedCaptcha) {
+      return storedCaptcha;
+    }
+  }
+
+  const newKey = await vscode.window.showInputBox({
+    prompt: 'Captcha Response',
+    placeHolder: 'Enter a captcha key from https://captcha.roblockhead.repl.co',
+    value: '',
+    ignoreFocusOut: true,
+  });
+
+  if (newKey) {
+    await store.set({ captchaKey: newKey });
+    return newKey;
+  }
 
   return null;
 };
@@ -60,7 +97,8 @@ const openedRepls: {
 function openReplClient(
   replInfo: ReplInfo,
   context: vscode.ExtensionContext,
-  apiKey: string,
+  userSid: string,
+  captchaKey?: string,
 ): CrosisClient {
   vscode.window.showInformationMessage(`Repl.it: connecting to @${replInfo.user}/${replInfo.slug}`);
 
@@ -80,26 +118,40 @@ function openReplClient(
         extensionContext: context,
         replInfo,
       },
-      fetchToken: async (_abortSignal: any) => {
-        if (!apiKey) {
+      fetchConnectionMetadata: async (_abortSignal: AbortSignal) => {
+        console.log('Fetching Token');
+        if (!userSid) {
           throw new Error('Repl.it: Failed to open repl, no API key provided');
         }
-
-        let token;
+        let govalMeta: GovalMetadata;
+        let res: FetchConnectionMetadataResult;
         try {
-          token = await fetchToken(replInfo.id, apiKey);
+          govalMeta = JSON.parse(await fetchToken(replInfo.id, userSid, captchaKey));
+          res = {
+            ...govalMeta,
+            error: null,
+          };
+          return res;
         } catch (e) {
           if (e.name === 'AbortError') {
-            return { aborted: true, token: null };
+            res = {
+              error: FetchConnectionMetadataError.Aborted,
+            };
+          } else {
+            vscode.window.showErrorMessage(`${e}`);
+            res = {
+              error: e,
+            };
           }
-
-          throw e;
+          return res;
         }
-        return { token, aborted: false };
+
+        // let res: FetchConnectionMetadataResult;
       },
       // eslint-disable-next-line
       // @ts-ignore we don't use addEventListener removeEventListener and dispatchEvent :)
       WebSocketClass: ws as WebSocket,
+      // WebSocketClass: WebSocket,
     },
     (result) => {
       if (!result.channel) {
@@ -177,9 +229,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       throw new Error('expected API key');
     }
 
+    const captchaKey = await ensureCaptcha(store);
+
+    if (!captchaKey) {
+      vscode.window.showErrorMessage('Expected CAPTCHA key');
+
+      throw new Error('expected CAPTCHA key');
+    }
     let replInfo: ReplInfo;
     try {
-      replInfo = await getReplInfo(replId);
+      replInfo = await getReplInfo(replId, apiKey);
     } catch (e) {
       console.error(e);
 
@@ -188,7 +247,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       throw e;
     }
 
-    return openReplClient(replInfo, context, apiKey);
+    return openReplClient(replInfo, context, apiKey, captchaKey);
   });
 
   context.subscriptions.push(
@@ -254,6 +313,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('replit.captchakey', async () =>
+      ensureCaptcha(store, { forceNew: true }),
+    ),
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('replit.openrepl', async () => {
       const input = await vscode.window.showInputBox({
         prompt: 'Repl Name',
@@ -261,13 +326,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         ignoreFocusOut: true,
       });
 
+      const apiKey = await ensureKey(store);
+
       if (!input) {
         return vscode.window.showErrorMessage('Repl.it: please supply a valid repl url or id');
       }
 
       let replInfo: ReplInfo;
       try {
-        replInfo = await getReplInfo(input);
+        replInfo = await getReplInfo(input, apiKey);
       } catch (e) {
         console.error(e);
 
