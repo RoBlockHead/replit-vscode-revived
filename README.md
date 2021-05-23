@@ -1,7 +1,8 @@
+# Replit (unofficial) VSCode Extension
 
-# Requirements
+This extension is based off of [the original Replit VScode extension](https://marketplace.visualstudio.com/items?itemName=masad-frost.replit). It is not as smooth to use as the original, but it works the same at its core.
 
-You must have the `developer` role on repl.it to use this extension.
+It allows you to connect to any replit repl and edit files.
 
 # How to use
 
@@ -9,7 +10,9 @@ After installing this extension, bring up the command pallette and paste a link 
 
 ![](https://i.imgur.com/1liRgmn.png)
 
-If you haven't already, you will be prompted to supply an API key. You can get one from [here](https://devs.turbio.repl.co/)
+To use this, you will need to set your SID value, which is your session ID, this can be found by copying the value of the cookie named "connect.sid" on replit.com.
+
+Additionally, in order to verify that you're a human, you'll likely need to set a captcha response, which can be obtained from [my service](https://captcha.roblockhead.repl.co). This value will change every so often, so you'll have to reset it. This is the drawback of using this extension without official access to Crosis.
 
 Once you open a repl you can start making changes to the filesystem from the filetree and the editor.
 

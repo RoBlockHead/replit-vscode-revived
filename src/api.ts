@@ -38,9 +38,13 @@ const ReplInfoFromIdDoc = gql`
 `;
 
 async function getReplInfoByUrl(url: string, userSid?: string): Promise<ReplInfo> {
-  const result = await gqlClient.request(ReplInfoFromUrlDoc, { url }, {
-    cookie: `connect.sid=${userSid}`,
-  });
+  const result = await gqlClient.request(
+    ReplInfoFromUrlDoc,
+    { url },
+    {
+      cookie: `connect.sid=${userSid}`,
+    },
+  );
 
   if (!result.repl) {
     throw new Error('unexpected grqphql response for url');
@@ -54,9 +58,13 @@ async function getReplInfoByUrl(url: string, userSid?: string): Promise<ReplInfo
 }
 
 async function getReplInfoById(id: string, userSid?: string): Promise<ReplInfo> {
-  const result = await gqlClient.request(ReplInfoFromIdDoc, { id }, {
-    cookie: `connect.sid=${userSid}`,
-  });
+  const result = await gqlClient.request(
+    ReplInfoFromIdDoc,
+    { id },
+    {
+      cookie: `connect.sid=${userSid}`,
+    },
+  );
 
   if (!result.repl) {
     throw new Error('unexpected grqphql response for url');
@@ -86,7 +94,11 @@ export async function getReplInfo(input: string, userSid?: string): Promise<Repl
   return getReplInfoByUrl(`https://replit.com/@${user}/${slug}`, userSid);
 }
 
-export async function fetchToken(replId: string, userSid: string, captchaKey?: string): Promise<string> {
+export async function fetchToken(
+  replId: string,
+  userSid: string,
+  captchaKey?: string,
+): Promise<string> {
   console.log(`fetching token for ${replId}`);
   const r = await fetch(`https://replit.com/data/repls/${replId}/get_connection_metadata`, {
     headers: {
@@ -109,7 +121,11 @@ export async function fetchToken(replId: string, userSid: string, captchaKey?: s
   if (r.status > 399) {
     if (JSON.parse(text).message?.toLowerCase().indexOf('captcha failed') !== -1) {
       throw new Error(`Captcha failed, please set a captcha key. error: ${text}`);
-    } else throw new Error(`Repl.it: ${r.status} Error Failed to open Repl. Error: ${JSON.parse(text).message}`);
+    } else {
+      throw new Error(
+        `Repl.it: ${r.status} Error Failed to open Repl. Error: ${JSON.parse(text).message}`,
+      );
+    }
   }
   console.log(`Token Obtained: ${text}`);
 

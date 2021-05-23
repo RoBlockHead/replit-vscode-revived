@@ -1,5 +1,10 @@
 /* eslint-disable max-classes-per-file */
-import { Client, FetchConnectionMetadataError, FetchConnectionMetadataResult, GovalMetadata } from '@replit/crosis';
+import {
+  Client,
+  FetchConnectionMetadataError,
+  FetchConnectionMetadataResult,
+  GovalMetadata,
+} from '@replit/crosis';
 import * as vscode from 'vscode';
 import ws from 'ws';
 import { FS } from './fs';
@@ -7,10 +12,6 @@ import { Options } from './options';
 import ReplitTerminal from './shell';
 import { CrosisClient, ReplInfo } from './types';
 import { fetchToken, getReplInfo } from './api';
-
-// Simple key regex. No need to be strict here.
-// const validKey = (key: string): boolean => !!key && /[a-zA-Z0-9/=]+:[a-zA-Z0-9/=]+/.test(key);
-const validKey = (key: string): boolean => (!!key);
 
 const ensureKey = async (
   store: Options,
@@ -30,20 +31,17 @@ const ensureKey = async (
       storedKey = '';
     }
 
-    if (storedKey && validKey(storedKey)) {
-      return storedKey;
-    }
+    if (storedKey) return storedKey;
   }
 
   const newKey = await vscode.window.showInputBox({
-    prompt: 'Crosis API Key',
-    placeHolder: 'Enter your api key from https://devs.turbio.repl.co',
+    prompt: 'Session ID',
+    placeHolder: 'Enter your Replit Session ID (the value of the "connect.sid" cookie)',
     value: '',
     ignoreFocusOut: true,
-    validateInput: (val) => (validKey(val) ? '' : 'Please enter a valid crosis key'),
   });
 
-  if (newKey && validKey(newKey)) {
+  if (newKey) {
     await store.set({ key: newKey });
     return newKey;
   }
@@ -272,6 +270,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.commands.registerCommand('replit.shell', async () => {
       const r = Object.values(openedRepls);
+
+      // handle no repls open
       if (r.length === 0) {
         return vscode.window.showErrorMessage('Please open a repl first');
       }

@@ -1,10 +1,10 @@
 {
-  "name": "replit",
+  "name": "replit-revived",
   "displayName": "replit-revived",
   "description": "VS Code extension for connecting to repls",
   "icon": "images/replit-vs-code-logo.png",
-  "version": "0.0.3",
-  "publisher": "roblockhead",
+  "version": "0.5.1",
+  "publisher": "miroreo",
   "repository": "https://github.com/roblockhead/replit-vscode-revived",
   "engines": {
     "vscode": "^1.52.0"
@@ -20,6 +20,12 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsWelcome": [
+      {
+        "view": "replit",
+        "contents": "No node dependencies found [learn more](https://www.npmjs.com/).\n[Add Dependency](command:nodeDependencies.addEntry)"
+      }
+    ],
     "commands": [
       {
         "command": "replit.openrepl",
@@ -61,8 +67,8 @@
       "panel": [
         {
           "id": "replit",
-          "title": "Replit Settings",
-          "icon": "resources/package-explorer.svg"
+          "title": "Replit",
+          "icon": "images/replit-logo.png"
         }
       ]
     }
@@ -106,10 +112,10 @@
     "glob": "^7.1.6",
     "mocha": "^8.1.3",
     "prettier": "^2.2.1",
-    "ts-loader": "^8.0.14",
+    "ts-loader": "^9.2.1",
     "typescript": "^4.1.2",
     "vscode-test": "^1.4.1",
-    "webpack": "^5.12.2",
+    "webpack": "^5.37.1",
     "webpack-cli": "^4.3.1"
   },
   "dependencies": {
