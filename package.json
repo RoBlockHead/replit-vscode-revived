@@ -1,9 +1,9 @@
 {
-  "name": "replit-revived",
-  "displayName": "replit-revived",
+  "name": "replit",
+  "displayName": "Replit for VSCode",
   "description": "VS Code extension for connecting to repls",
   "icon": "images/replit-vs-code-logo.png",
-  "version": "0.5.1",
+  "version": "0.6.3",
   "publisher": "miroreo",
   "repository": "https://github.com/roblockhead/replit-vscode-revived",
   "engines": {
@@ -53,22 +53,6 @@
         {
           "command": "replit.shell",
           "when": "workbenchState == workspace"
-        }
-      ]
-    },
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "replit",
-          "title": "Replit Settings",
-          "icon": "resources/package-explorer.svg"
-        }
-      ],
-      "panel": [
-        {
-          "id": "replit",
-          "title": "Replit",
-          "icon": "images/replit-logo.png"
         }
       ]
     }

@@ -9,6 +9,18 @@ gqlClient.setHeaders({
   referrer: 'https://replit.com/@RoBlockHead',
 });
 
+// const SelfRepls = gql`
+//   query SelfRepls($username: String!) {
+//     recentRepls(count: $num) {
+//       id
+//       user {
+//         username
+//       }
+//       slug
+//     }
+//   }
+// `;
+
 const ReplInfoFromUrlDoc = gql`
   query ReplInfoFromUrl($url: String!) {
     repl(url: $url) {
@@ -36,6 +48,30 @@ const ReplInfoFromIdDoc = gql`
     }
   }
 `;
+
+// const getSelfRepls = async (userSid: string, count?: number) => {
+//   const result = await gqlClient.request(
+//     SelfRepls,
+//     { count: count || 10 },
+//     {
+//       cookie: `connect.sid=${userSid}`,
+//     },
+//   );
+//   if (!result.recentRepls) {
+//     throw new Error(
+//       `Unexpected GQL Response... Expected Repls, recieved ${JSON.stringify(result)}`,
+//     );
+//   }
+//   const repls = [];
+//   for (const repl of result.recentRepls) {
+//     repls.push({
+//       id: repl.id,
+//       user: repl.user.username,
+//       slug: repl.slug,
+//     });
+//   }
+//   return repls;
+// };
 
 async function getReplInfoByUrl(url: string, userSid?: string): Promise<ReplInfo> {
   const result = await gqlClient.request(
