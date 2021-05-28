@@ -7,20 +7,25 @@ import {
 } from '@replit/crosis';
 import * as vscode from 'vscode';
 import ws from 'ws';
+import { fetchToken, getReplInfo } from './api';
 import { FS } from './fs';
+// import { runRepl } from './misc';
 import { Options } from './options';
+import ReplitOutput from './output';
 import ReplitTerminal from './shell';
 import { CrosisClient, ReplInfo } from './types';
-import { fetchToken, getReplInfo } from './api';
 
 const ensureKey = async (
   store: Options,
   { forceNew }: { forceNew: boolean } = { forceNew: false },
-): Promise<string | undefined> => {
+): Promise<string> => {
   if (!forceNew) {
     let storedKey: string;
     try {
       const key = await store.get('key');
+      if (typeof key !== 'string') {
+        throw new Error('Not String!');
+      }
       if (typeof key === 'string') {
         storedKey = key;
       } else {
@@ -45,6 +50,7 @@ const ensureKey = async (
     await store.set({ key: newKey });
     return newKey;
   }
+  return '';
 };
 
 const ensureCaptcha = async (
@@ -89,6 +95,7 @@ const openedRepls: {
   [replId: string]: {
     replInfo: ReplInfo;
     client: CrosisClient;
+    output?: ReplitOutput;
   };
 } = {};
 
@@ -205,8 +212,15 @@ function openReplClient(
     },
   );
 
-  openedRepls[replInfo.id] = { replInfo, client };
+  const output = new ReplitOutput(client);
 
+  const outputTerminal = vscode.window.createTerminal({
+    name: `Output: @${replInfo.user}/${replInfo.slug}`,
+    pty: output,
+  });
+  outputTerminal.show();
+
+  openedRepls[replInfo.id] = { replInfo, client, output };
   return client;
 }
 
@@ -307,6 +321,38 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('replit.run', async () => {
+      const r = Object.values(openedRepls);
+
+      // handle no repls open
+      if (r.length === 0) {
+        return vscode.window.showErrorMessage('Please open a repl first');
+      }
+
+      let replId;
+      if (r.length > 1) {
+        const replsToPick = Object.values(openedRepls).map(
+          ({ replInfo }) => `@${replInfo.user}/${replInfo.slug} ::${replInfo.id}`,
+        );
+
+        const selected = await vscode.window.showQuickPick(replsToPick, {
+          placeHolder: 'Select a repl to run',
+        });
+
+        if (!selected) {
+          return;
+        }
+
+        [, replId] = selected.split('::');
+      } else {
+        replId = r[0].replInfo.id;
+      }
+
+      openedRepls[replId].output?.run();
+    }),
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('replit.apikey', async () =>
       ensureKey(store, { forceNew: true }),
     ),
@@ -325,8 +371,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         placeHolder: '@user/repl or full url to repl',
         ignoreFocusOut: true,
       });
-
       const apiKey = await ensureKey(store);
+      // const repls = await getSelfRepls(apiKey, 10);
+      // const parsedRepls = Object.values(repls).map((v) => `@${v.user}/${v.slug}`);
+      // const input = await vscode.window.showQuickPick(parsedRepls, {
+      //   canPickMany: false,
+      //   placeHolder: 'Choose a repl or enter @user/repl',
+      // });
 
       if (!input) {
         return vscode.window.showErrorMessage('Repl.it: please supply a valid repl url or id');

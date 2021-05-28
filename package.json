@@ -5,7 +5,10 @@
   "icon": "images/replit-vs-code-logo.png",
   "version": "0.6.3",
   "publisher": "miroreo",
-  "repository": "https://github.com/roblockhead/replit-vscode-revived",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/roblockhead/replit-vscode-revived.git"
+  },
   "engines": {
     "vscode": "^1.52.0"
   },
@@ -46,12 +49,27 @@
         "command": "replit.captchakey",
         "title": "Set the CAPTCHA key",
         "category": "Replit"
+      },
+      {
+        "command": "replit.run",
+        "title": "Run a repl",
+        "category": "Replit",
+        "icon": {
+          "light": "images/run.svg",
+          "dark": "images/run.svg"
+        }
       }
     ],
     "menus": {
       "commandPalette": [
         {
           "command": "replit.shell",
+          "when": "workbenchState == workspace"
+        }
+      ],
+      "editor/title/run": [
+        {
+          "command": "replit.run",
           "when": "workbenchState == workspace"
         }
       ]
