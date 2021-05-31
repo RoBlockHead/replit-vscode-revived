@@ -15,6 +15,8 @@ import ReplitOutput from './output';
 import ReplitTerminal from './shell';
 import { CrosisClient, ReplInfo } from './types';
 
+const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
+
 const ensureKey = async (
   store: Options,
   { forceNew }: { forceNew: boolean } = { forceNew: false },
@@ -105,7 +107,8 @@ function openReplClient(
   userSid: string,
   captchaKey?: string,
 ): CrosisClient {
-  vscode.window.showInformationMessage(`Repl.it: connecting to @${replInfo.user}/${replInfo.slug}`);
+  statusBarItem.show();
+  statusBarItem.text = `$(sync~spin) Replit: @${replInfo.user}/${replInfo.slug}`;
 
   const client = new Client<{
     extensionContext: vscode.ExtensionContext;
@@ -162,9 +165,7 @@ function openReplClient(
       if (!result.channel) {
         return;
       }
-
-      vscode.window.showInformationMessage(`Repl.it: @${replInfo.user}/${replInfo.slug} connected`);
-
+      statusBarItem.text = `$(link) Replit: @${replInfo.user}/${replInfo.slug}`;
       result.channel.onCommand((cmd) => {
         if (cmd.portOpen?.forwarded) {
           const panel = vscode.window.createWebviewPanel(
@@ -200,10 +201,13 @@ function openReplClient(
 
       return ({ willReconnect }) => {
         if (willReconnect) {
-          vscode.window.showWarningMessage(
-            `Repl.it: @${replInfo.user}/${replInfo.slug} unexpectedly disconnected, reconnecting...`,
-          );
+          statusBarItem.text = `$(sync~spin) Replit: @${replInfo.user}/${replInfo.slug}`;
+          statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+          statusBarItem.tooltip = 'Connection interrupted, reconnecting...';
         } else {
+          statusBarItem.text = `$(error) Replit: @${replInfo.user}/${replInfo.slug}`;
+          statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+          statusBarItem.tooltip = 'Connection permanently disconnected';
           vscode.window.showWarningMessage(
             `Repl.it: @${replInfo.user}/${replInfo.slug} connection permanently disconnected`,
           );
@@ -211,16 +215,21 @@ function openReplClient(
       };
     },
   );
+  if (replInfo.lang.engine === 'goval') {
+    const output = new ReplitOutput(client);
 
-  const output = new ReplitOutput(client);
-
-  const outputTerminal = vscode.window.createTerminal({
-    name: `Output: @${replInfo.user}/${replInfo.slug}`,
-    pty: output,
-  });
-  outputTerminal.show();
-
-  openedRepls[replInfo.id] = { replInfo, client, output };
+    const outputTerminal = vscode.window.createTerminal({
+      name: `Output: @${replInfo.user}/${replInfo.slug}`,
+      pty: output,
+    });
+    outputTerminal.show();
+    openedRepls[replInfo.id].output = output;
+  } else {
+    vscode.window.showWarningMessage(
+      `This repl is a ${replInfo.lang.engine} repl, so it has limited features.`,
+    );
+  }
+  openedRepls[replInfo.id] = { replInfo, client };
   return client;
 }
 
@@ -347,7 +356,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       } else {
         replId = r[0].replInfo.id;
       }
-
+      if (openedRepls[replId].replInfo.lang.engine !== 'goval') {
+        vscode.window.showErrorMessage(
+          'This repl has limited features, so the run button cannot be used.',
+        );
+        return;
+      }
       openedRepls[replId].output?.run();
     }),
   );

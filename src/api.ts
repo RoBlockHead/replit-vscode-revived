@@ -9,6 +9,7 @@ gqlClient.setHeaders({
   referrer: 'https://replit.com/@RoBlockHead',
 });
 
+// GQL query for an individual user's repls
 const SelfRepls = gql`
   query SelfRepls($username: String!) {
     recentRepls(count: $num) {
@@ -17,10 +18,16 @@ const SelfRepls = gql`
         username
       }
       slug
+      lang {
+        id
+        canUseShellRunner
+        engine
+      }
     }
   }
 `;
 
+// GQL query to get a repl from a URL
 const ReplInfoFromUrlDoc = gql`
   query ReplInfoFromUrl($url: String!) {
     repl(url: $url) {
@@ -30,11 +37,17 @@ const ReplInfoFromUrlDoc = gql`
           username
         }
         slug
+        lang {
+          id
+          canUseShellRunner
+          engine
+        }
       }
     }
   }
 `;
 
+// GQL query to get a repl from a UUID
 const ReplInfoFromIdDoc = gql`
   query ReplInfoFromUrl($id: String!) {
     repl(id: $id) {
@@ -44,12 +57,18 @@ const ReplInfoFromIdDoc = gql`
           username
         }
         slug
+        lang {
+          id
+          canUseShellRunner
+          engine
+        }
       }
     }
   }
 `;
 
-export const getSelfRepls = async (userSid: string, count?: number): Promise<unknown[]> => {
+// Get a user's own repls
+export const getSelfRepls = async (userSid: string, count?: number): Promise<ReplInfo[]> => {
   const result = await gqlClient.request(
     SelfRepls,
     { count: count || 10 },
@@ -62,12 +81,17 @@ export const getSelfRepls = async (userSid: string, count?: number): Promise<unk
       `Unexpected GQL Response... Expected Repls, recieved ${JSON.stringify(result)}`,
     );
   }
-  const repls = [];
+  const repls: ReplInfo[] = [];
   for (const repl of result.recentRepls) {
     repls.push({
       id: repl.id,
       user: repl.user.username,
       slug: repl.slug,
+      lang: {
+        id: repl.lang.id,
+        canUseShellRunner: repl.lang.canUseShellRunner,
+        engine: repl.lang.engine,
+      },
     });
   }
   return repls;
@@ -90,6 +114,11 @@ async function getReplInfoByUrl(url: string, userSid?: string): Promise<ReplInfo
     id: result.repl.id,
     user: result.repl.user.username,
     slug: result.repl.slug,
+    lang: {
+      id: result.repl.lang.id,
+      canUseShellRunner: result.repl.lang.canUseShellRunner,
+      engine: result.repl.lang.engine,
+    },
   };
 }
 
@@ -110,6 +139,11 @@ async function getReplInfoById(id: string, userSid?: string): Promise<ReplInfo> 
     id: result.repl.id,
     user: result.repl.user.username,
     slug: result.repl.slug,
+    lang: {
+      id: result.repl.lang.id,
+      canUseShellRunner: result.repl.lang.canUseShellRunner,
+      engine: result.repl.lang.engine,
+    },
   };
 }
 
