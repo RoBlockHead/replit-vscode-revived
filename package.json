@@ -10,7 +10,7 @@
     "url": "https://github.com/roblockhead/replit-vscode-revived.git"
   },
   "engines": {
-    "vscode": "^1.52.0"
+    "vscode": "^1.56.0"
   },
   "categories": [
     "Other"
