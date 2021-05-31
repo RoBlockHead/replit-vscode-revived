@@ -32,11 +32,9 @@ const migrateSecrets = async (store: Options, context: vscode.ExtensionContext) 
     await context.secrets.store('captchaKey', captcha);
     console.log('Migrating captcha key to secure storage...');
   }
-  if (typeof captcha === 'string' && typeof key === 'string') {
-    store.write({});
-    context.secrets.store('migrated', 'true');
-    console.log('Finished migrating secrets to secure storage.');
-  }
+  store.write({});
+  console.log('Finished migrating secrets to secure storage.');
+  context.secrets.store('migrated', 'true');
 };
 
 const getUserSid = async (
