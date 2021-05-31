@@ -164,7 +164,6 @@ function openReplClient(
       // eslint-disable-next-line
       // @ts-ignore we don't use addEventListener removeEventListener and dispatchEvent :)
       WebSocketClass: ws as WebSocket,
-      // WebSocketClass: WebSocket,
     },
     (result) => {
       if (!result.channel) {
@@ -183,15 +182,7 @@ function openReplClient(
           panel.webview.html = `<!DOCTYPE html>
 <head>
   <style>
-   html, body, iframe {
-     height: 100%;
-     width: 100%;
-     background: white;
-     border: none;
-     padding: 0;
-     margin: 0;
-     display: block;
-   }
+  body,html,iframe{height:100%;width:100%;background:#fff;border:none;padding:0;margin:0;display:block}
   </style>
 </head>
   <body>
@@ -240,8 +231,7 @@ function openReplClient(
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // migrate secrets to more secure vscode secret store
-  const store = await Options.create();
-  await migrateSecrets(store, context);
+  await migrateSecrets(await Options.create(), context);
 
   await getUserSid(context);
 
@@ -393,7 +383,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         placeHolder: '@user/repl or full url to repl',
         ignoreFocusOut: true,
       });
-      const apiKey = await getUserSid(context);
+      const userSid = await getUserSid(context);
       // const repls = await getSelfRepls(apiKey, 10);
       // const parsedRepls = Object.values(repls).map((v) => `@${v.user}/${v.slug}`);
       // const input = await vscode.window.showQuickPick(parsedRepls, {
@@ -402,12 +392,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       // });
 
       if (!input) {
-        return vscode.window.showErrorMessage('Repl.it: please supply a valid repl url or id');
+        return vscode.window.showErrorMessage('Replit: please supply a valid repl url or id');
       }
 
       let replInfo: ReplInfo;
       try {
-        replInfo = await getReplInfo(input, apiKey);
+        replInfo = await getReplInfo(input, userSid);
       } catch (e) {
         console.error(e);
 
