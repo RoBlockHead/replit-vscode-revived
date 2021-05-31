@@ -17,62 +17,69 @@ import { CrosisClient, ReplInfo } from './types';
 
 const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
 
-const ensureKey = async (
-  store: Options,
+// migrate secrets from file store to secrets
+const migrateSecrets = async (store: Options, context: vscode.ExtensionContext) => {
+  if ((await context.secrets.get('migrated')) === 'true') {
+    return;
+  }
+  const key = await store.get('key');
+  const captcha = await store.get('captchaKey');
+  if (typeof key === 'string') {
+    await context.secrets.store('userSid', key);
+    console.log('Migrating user sid to secure storage...');
+  }
+  if (typeof captcha === 'string') {
+    await context.secrets.store('captchaKey', captcha);
+    console.log('Migrating captcha key to secure storage...');
+  }
+  if (typeof captcha === 'string' && typeof key === 'string') {
+    store.write({});
+    context.secrets.store('migrated', 'true');
+    console.log('Finished migrating secrets to secure storage.');
+  }
+};
+
+const getUserSid = async (
+  context: vscode.ExtensionContext,
   { forceNew }: { forceNew: boolean } = { forceNew: false },
 ): Promise<string> => {
   if (!forceNew) {
-    let storedKey: string;
-    try {
-      const key = await store.get('key');
-      if (typeof key !== 'string') {
-        throw new Error('Not String!');
-      }
-      if (typeof key === 'string') {
-        storedKey = key;
-      } else {
-        storedKey = '';
-      }
-    } catch (e) {
-      console.error(e);
-      storedKey = '';
+    let storedSid: string;
+    const userSid = await context.secrets.get('userSid');
+    if (userSid) {
+      storedSid = userSid;
+    } else {
+      storedSid = '';
     }
-
-    if (storedKey) return storedKey;
+    if (storedSid) return storedSid;
   }
 
-  const newKey = await vscode.window.showInputBox({
+  const newSid = await vscode.window.showInputBox({
     prompt: 'Session ID',
     placeHolder: 'Enter your Replit Session ID (the value of the "connect.sid" cookie)',
     value: '',
     ignoreFocusOut: true,
   });
 
-  if (newKey) {
-    await store.set({ key: newKey });
-    return newKey;
+  if (newSid) {
+    await context.secrets.store('userSid', newSid);
+    return newSid;
   }
   return '';
 };
 
-const ensureCaptcha = async (
-  store: Options,
+const getCaptchaKey = async (
+  context: vscode.ExtensionContext,
   { forceNew }: { forceNew: boolean } = { forceNew: false },
 ): Promise<string | null> => {
   if (!forceNew) {
     let storedCaptcha: string;
-    try {
-      const captchaKey = await store.get('captchaKey');
-      if (typeof captchaKey === 'string') {
-        storedCaptcha = captchaKey;
-      } else {
-        storedCaptcha = '';
-      }
-    } catch (e) {
-      console.error(e);
+    const captchaKey = await context.secrets.get('captchaKey');
+    if (captchaKey) {
+      storedCaptcha = captchaKey;
+    } else {
       storedCaptcha = '';
     }
-
     if (storedCaptcha) {
       return storedCaptcha;
     }
@@ -86,7 +93,7 @@ const ensureCaptcha = async (
   });
 
   if (newKey) {
-    await store.set({ captchaKey: newKey });
+    await context.secrets.store('captchaKey', newKey);
     return newKey;
   }
 
@@ -129,7 +136,7 @@ function openReplClient(
       fetchConnectionMetadata: async (_abortSignal: AbortSignal) => {
         console.log('Fetching Token');
         if (!userSid) {
-          throw new Error('Repl.it: Failed to open repl, no API key provided');
+          throw new Error('Replit: Failed to open repl, no API key provided');
         }
         let govalMeta: GovalMetadata;
         let res: FetchConnectionMetadataResult;
@@ -234,15 +241,18 @@ function openReplClient(
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  // migrate secrets to more secure vscode secret store
   const store = await Options.create();
-  await ensureKey(store);
+  await migrateSecrets(store, context);
+
+  await getUserSid(context);
 
   const fs = new FS(async (replId) => {
     if (openedRepls[replId]) {
       return openedRepls[replId].client;
     }
 
-    const apiKey = await ensureKey(store);
+    const apiKey = await getUserSid(context);
 
     if (!apiKey) {
       vscode.window.showErrorMessage('Expected API key');
@@ -250,7 +260,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       throw new Error('expected API key');
     }
 
-    const captchaKey = await ensureCaptcha(store);
+    const captchaKey = await getCaptchaKey(context);
 
     if (!captchaKey) {
       vscode.window.showErrorMessage('Expected CAPTCHA key');
@@ -368,13 +378,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     vscode.commands.registerCommand('replit.apikey', async () =>
-      ensureKey(store, { forceNew: true }),
+      getUserSid(context, { forceNew: true }),
     ),
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand('replit.captchakey', async () =>
-      ensureCaptcha(store, { forceNew: true }),
+      getCaptchaKey(context, { forceNew: true }),
     ),
   );
 
@@ -385,7 +395,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         placeHolder: '@user/repl or full url to repl',
         ignoreFocusOut: true,
       });
-      const apiKey = await ensureKey(store);
+      const apiKey = await getUserSid(context);
       // const repls = await getSelfRepls(apiKey, 10);
       // const parsedRepls = Object.values(repls).map((v) => `@${v.user}/${v.slug}`);
       // const input = await vscode.window.showQuickPick(parsedRepls, {
