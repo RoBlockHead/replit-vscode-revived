@@ -1,5 +1,7 @@
 # Replit (unofficial) VSCode Extension
 
+[![Support Server](https://img.shields.io/discord/591914197219016707.svg?label=Discord&logo=Discord&colorB=7289da&style=for-the-badge)](https://discord.gg/yXs2ZgEzJQ)
+
 This extension is based off of [the original Replit VScode extension](https://marketplace.visualstudio.com/items?itemName=masad-frost.replit). It is not as smooth to use as the original, but it works the same at its core.
 
 It allows you to connect to any replit repl and edit files.
