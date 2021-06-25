@@ -9,6 +9,7 @@ import * as vscode from 'vscode';
 import ws from 'ws';
 import { fetchToken, getReplInfo } from './api';
 import { FS } from './fs';
+import MultiplayerTextDocumentProvider from './multi';
 // import { runRepl } from './misc';
 import { Options } from './options';
 import ReplitOutput from './output';
@@ -261,11 +262,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     return openReplClient(replInfo, context, apiKey, captchaKey);
   });
-
+  const mpTcP = new MultiplayerTextDocumentProvider();
   context.subscriptions.push(
     vscode.workspace.registerFileSystemProvider('replit', fs, {
       isCaseSensitive: true,
     }),
+    vscode.workspace.registerTextDocumentContentProvider('replit', mpTcP),
   );
 
   context.subscriptions.push(
