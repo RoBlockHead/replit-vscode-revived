@@ -3,14 +3,14 @@
   "displayName": "Replit for VSCode",
   "description": "VS Code extension for connecting to repls",
   "icon": "images/replit-vs-code-logo.png",
-  "version": "0.7.0",
+  "version": "0.8.1",
   "publisher": "miroreo",
   "repository": {
     "type": "git",
     "url": "https://github.com/roblockhead/replit-vscode-revived.git"
   },
   "engines": {
-    "vscode": "^1.52.0"
+    "vscode": "^1.56.0"
   },
   "categories": [
     "Other"
@@ -98,7 +98,7 @@
     "@types/mocha": "^8.0.4",
     "@types/node": "^12.19.12",
     "@types/node-fetch": "^2.5.7",
-    "@types/vscode": "^1.52.0",
+    "@types/vscode": "^1.56.0",
     "@types/websocket": "^1.0.1",
     "@types/ws": "^7.4.0",
     "@typescript-eslint/eslint-plugin": "^4.12.0",
@@ -116,7 +116,7 @@
     "prettier": "^2.2.1",
     "ts-loader": "^9.2.1",
     "typescript": "^4.1.2",
-    "vscode-test": "^1.4.1",
+    "vscode-test": "^1.5.2",
     "webpack": "^5.37.1",
     "webpack-cli": "^4.3.1"
   },
