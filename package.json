@@ -36,6 +36,16 @@
         "category": "Replit"
       },
       {
+        "command": "replit.refreshcaptcha",
+        "title": "Refresh the CAPTCHA verification for Replit",
+        "category": "Replit"
+      },
+      {
+        "command": "replit.openmptest",
+        "title": "Open the Multiplayer test",
+        "category": "Replit"
+      },
+      {
         "command": "replit.shell",
         "title": "Open a shell for a repl",
         "category": "Replit"
