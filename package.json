@@ -3,7 +3,7 @@
   "displayName": "Replit for VSCode",
   "description": "VS Code extension for connecting to repls",
   "icon": "images/replit-vs-code-logo.png",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "publisher": "miroreo",
   "repository": {
     "type": "git",
