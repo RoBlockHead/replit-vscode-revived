@@ -211,6 +211,9 @@ function openReplClient(
       };
     },
   );
+
+  openedRepls[replInfo.id] = { replInfo, client };
+
   if (replInfo.lang.engine === 'goval') {
     const output = new ReplitOutput(client);
 
@@ -225,7 +228,6 @@ function openReplClient(
       `This repl is a ${replInfo.lang.engine} repl, so it has limited features.`,
     );
   }
-  openedRepls[replInfo.id] = { replInfo, client };
   return client;
 }
 
