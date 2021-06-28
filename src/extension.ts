@@ -302,7 +302,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
   context.subscriptions.push(
     vscode.commands.registerCommand('replit.openmptest', async () => {
-      const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse('replit-mp:yeet'));
+      const doc = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse('replit-mp:test-feature-please-ignore'),
+      );
       await vscode.window.showTextDocument(doc, { preview: false });
     }),
   );
@@ -427,8 +429,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         return vscode.window.showErrorMessage(e.message || 'Error with no message, check console');
       }
       if (!canUserEditRepl(userSid, replInfo.id)) {
-        vscode.window.showWarningMessage('You don\'t have permission to edit this repl, changes won\'t be saved.');
-      };
+        vscode.window.showWarningMessage(
+          "You don't have permission to edit this repl, changes won't be saved.",
+        );
+      }
       initFs(replInfo);
     }),
   );
