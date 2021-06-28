@@ -5,7 +5,22 @@ import { api } from '@replit/protocol';
 import { posix as posixPath } from 'path';
 import * as vscode from 'vscode';
 import debounce from 'lodash.debounce';
-import { CrosisClient } from './types';
+import { CrosisClient, ReplInfo } from './types';
+
+export const initFs = (replInfo: ReplInfo): void => {
+  // Insert the workspace folder at the end of the workspace list
+  // otherwise the extension gets decativated and reactivated
+  const { workspaceFolders } = vscode.workspace;
+  let start = 0;
+  if (workspaceFolders?.length) {
+    start = workspaceFolders.length;
+  }
+
+  vscode.workspace.updateWorkspaceFolders(start, 0, {
+    uri: vscode.Uri.parse(`replit://${replInfo.id}/`),
+    name: `@${replInfo.user}/${replInfo.slug}`,
+  });
+};
 
 function replIdFromUri({ path }: vscode.Uri): string {
   return path.split('/')[1];
@@ -76,7 +91,7 @@ class ReplFs implements vscode.FileSystemProvider {
       resolveFilesChan = res;
       reject = rej;
     });
-
+    console.log('bruh');
     client.openChannel({ service: 'gcsfiles' }, (result) => {
       if (result.error) {
         reject(vscode.FileSystemError.Unavailable());

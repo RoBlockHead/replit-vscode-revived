@@ -3,7 +3,7 @@
   "displayName": "Replit for VSCode",
   "description": "VS Code extension for connecting to repls",
   "icon": "images/replit-vs-code-logo.png",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "publisher": "miroreo",
   "repository": {
     "type": "git",
@@ -19,7 +19,8 @@
     "onFileSystem:replit",
     "onCommand:replit.openrepl",
     "onCommand:replit.apikey",
-    "onCommand:replit.captchakey"
+    "onCommand:replit.captchakey",
+    "oncommand:replit.refreshcaptcha"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -33,6 +34,16 @@
       {
         "command": "replit.openrepl",
         "title": "Open a repl",
+        "category": "Replit"
+      },
+      {
+        "command": "replit.refreshcaptcha",
+        "title": "Refresh the CAPTCHA verification for Replit",
+        "category": "Replit"
+      },
+      {
+        "command": "replit.openmptest",
+        "title": "Open the Multiplayer test (experimental, non-functional)",
         "category": "Replit"
       },
       {
@@ -121,8 +132,8 @@
     "webpack-cli": "^4.3.1"
   },
   "dependencies": {
-    "@replit/crosis": "^6.0.4",
-    "@replit/protocol": "^0.2.16",
+    "@replit/crosis": "^6.3.0",
+    "@replit/protocol": "^0.2.28",
     "graphql": "^15.4.0",
     "graphql-request": "^3.4.0",
     "lodash.debounce": "^4.0.8",

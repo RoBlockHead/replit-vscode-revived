@@ -1,6 +1,8 @@
 import fetch from 'node-fetch';
 import { GraphQLClient, gql } from 'graphql-request';
+import * as vscode from 'vscode';
 import { ReplInfo } from './types';
+import { renderCaptchaRefresh } from './captcha';
 
 const gqlClient = new GraphQLClient('https://replit.com/graphql/', {});
 gqlClient.setHeaders({
@@ -67,6 +69,23 @@ const ReplInfoFromIdDoc = gql`
   }
 `;
 
+const ReplPerms = gql`
+  query SelfInfo($replId: String!) {
+    currentUser {
+      id
+      username
+    }
+    repl(id: $replId) {
+      ... on Repl {
+        isOwner
+        multiplayers {
+          id
+          username
+        }
+      }
+    }
+  }
+`;
 // Get a user's own repls
 export const getSelfRepls = async (userSid: string, count?: number): Promise<ReplInfo[]> => {
   const result = await gqlClient.request(
@@ -95,6 +114,26 @@ export const getSelfRepls = async (userSid: string, count?: number): Promise<Rep
     });
   }
   return repls;
+};
+
+export const canUserEditRepl = async (userSid: string, replId: string): Promise<boolean> => {
+  const result = await gqlClient.request(
+    ReplPerms,
+    { replId },
+    {
+      cookie: `connect.sid=${userSid}`,
+    },
+  );
+  if (result.repl.isOwner) {
+    return true;
+  };
+  for (let i = 0; i < result.repl.multiplayers.length; i += 1) {
+    const multiplayer = result.repl.multiplayers[i];
+    if (result.currentUser.id === multiplayer.id) {
+      return true;
+    }
+  };
+  return false;
 };
 
 async function getReplInfoByUrl(url: string, userSid?: string): Promise<ReplInfo> {
@@ -166,21 +205,20 @@ export async function getReplInfo(input: string, userSid?: string): Promise<Repl
 
 export async function fetchToken(
   replId: string,
-  userSid: string,
-  captchaKey?: string,
+  context: vscode.ExtensionContext,
 ): Promise<string> {
   console.log(`fetching token for ${replId}`);
   const r = await fetch(`https://replit.com/data/repls/${replId}/get_connection_metadata`, {
     headers: {
       'Content-Type': 'application/json',
       'X-Requested-With': 'Crosis 2: Electric Boogaloo (replit/@RoBlockHead)',
-      cookie: `connect.sid=${userSid}`,
+      cookie: `connect.sid=${await context.secrets.get('userSid')}`,
       origin: 'https://replit.com',
       'User-Agent': 'Replit VSCode Revived (replit/@RoBlockHead)',
     },
     method: 'POST',
     body: JSON.stringify({
-      captcha: captchaKey,
+      captcha: (await context.secrets.get('captchaKey')),
       clientVersion: '7561851',
       format: 'pbuf',
       hCaptchaSiteKey: '473079ba-e99f-4e25-a635-e9b661c7dd3e',
@@ -190,7 +228,11 @@ export async function fetchToken(
 
   if (r.status > 399) {
     if (JSON.parse(text).message?.toLowerCase().indexOf('captcha failed') !== -1) {
-      throw new Error(`Captcha failed, please set a captcha key. error: ${text}`);
+      throw new Error('yeet');
+      console.log('captcha refreshing...');
+      if (await renderCaptchaRefresh(context)) {
+        // return fetchToken(replId, context);
+      }
     } else {
       throw new Error(
         `Repl.it: ${r.status} Error Failed to open Repl. Error: ${JSON.parse(text).message}`,

@@ -7,8 +7,10 @@ import {
 } from '@replit/crosis';
 import * as vscode from 'vscode';
 import ws from 'ws';
-import { fetchToken, getReplInfo } from './api';
-import { FS } from './fs';
+import { canUserEditRepl, fetchToken, getReplInfo } from './api';
+import { renderCaptchaRefresh } from './captcha';
+import { FS, initFs } from './fs';
+// import MultiplayerTextDocumentProvider from './multi';
 // import { runRepl } from './misc';
 import { Options } from './options';
 import ReplitOutput from './output';
@@ -51,7 +53,6 @@ const getUserSid = async (
     }
     if (storedSid) return storedSid;
   }
-
   const newSid = await vscode.window.showInputBox({
     prompt: 'Session ID',
     placeHolder: 'Enter your Replit Session ID (the value of the "connect.sid" cookie)',
@@ -110,7 +111,6 @@ function openReplClient(
   replInfo: ReplInfo,
   context: vscode.ExtensionContext,
   userSid: string,
-  captchaKey?: string,
 ): CrosisClient {
   statusBarItem.show();
   statusBarItem.text = `$(sync~spin) Replit: @${replInfo.user}/${replInfo.slug}`;
@@ -139,7 +139,7 @@ function openReplClient(
         let govalMeta: GovalMetadata;
         let res: FetchConnectionMetadataResult;
         try {
-          govalMeta = JSON.parse(await fetchToken(replInfo.id, userSid, captchaKey));
+          govalMeta = JSON.parse(await fetchToken(replInfo.id, context));
           res = {
             ...govalMeta,
             error: null,
@@ -268,15 +268,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       throw e;
     }
 
-    return openReplClient(replInfo, context, apiKey, captchaKey);
+    return openReplClient(replInfo, context, apiKey);
   });
-
+  // const mpTcP = new MultiplayerTextDocumentProvider();
   context.subscriptions.push(
     vscode.workspace.registerFileSystemProvider('replit', fs, {
       isCaseSensitive: true,
     }),
   );
-
+  // context.subscriptions.push(
+  //   vscode.workspace.onDidChangeTextDocument((changeEvent) => {
+  //     console.log(`Did change: ${changeEvent.document.uri}`);
+  //     for (const change of changeEvent.contentChanges) {
+  //         console.log(change.range); // range of text being replaced
+  //         console.log(change.text); // text replacement
+  //     }
+  //   }),
+  // );
+  // context.subscriptions.push(
+  //   vscode.workspace.registerTextDocumentContentProvider('replit-mp', mpTcP),
+  // );
   context.subscriptions.push(
     vscode.workspace.onDidChangeWorkspaceFolders((ev) => {
       ev.removed.forEach((folder) => {
@@ -289,7 +300,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       });
     }),
   );
-
+  context.subscriptions.push(
+    vscode.commands.registerCommand('replit.openmptest', async () => {
+      const doc = await vscode.workspace.openTextDocument(
+        vscode.Uri.parse('replit-mp:test-feature-please-ignore'),
+      );
+      await vscode.window.showTextDocument(doc, { preview: false });
+    }),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('replit.refreshcaptcha', async () => {
+      renderCaptchaRefresh(context);
+    }),
+  );
   context.subscriptions.push(
     vscode.commands.registerCommand('replit.shell', async () => {
       const r = Object.values(openedRepls);
@@ -405,19 +428,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         return vscode.window.showErrorMessage(e.message || 'Error with no message, check console');
       }
-
-      // Insert the workspace folder at the end of the workspace list
-      // otherwise the extension gets decativated and reactivated
-      const { workspaceFolders } = vscode.workspace;
-      let start = 0;
-      if (workspaceFolders?.length) {
-        start = workspaceFolders.length;
+      if (!canUserEditRepl(userSid, replInfo.id)) {
+        vscode.window.showWarningMessage(
+          "You don't have permission to edit this repl, changes won't be saved.",
+        );
       }
-
-      vscode.workspace.updateWorkspaceFolders(start, 0, {
-        uri: vscode.Uri.parse(`replit://${replInfo.id}/`),
-        name: `@${replInfo.user}/${replInfo.slug}`,
-      });
+      initFs(replInfo);
     }),
   );
 }
