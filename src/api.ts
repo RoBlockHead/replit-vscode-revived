@@ -212,13 +212,13 @@ export async function fetchToken(
     headers: {
       'Content-Type': 'application/json',
       'X-Requested-With': 'Crosis 2: Electric Boogaloo (replit/@RoBlockHead)',
-      cookie: `connect.sid=${context.secrets.get('userSid')}`,
+      cookie: `connect.sid=${await context.secrets.get('userSid')}`,
       origin: 'https://replit.com',
       'User-Agent': 'Replit VSCode Revived (replit/@RoBlockHead)',
     },
     method: 'POST',
     body: JSON.stringify({
-      captcha: context.secrets.get('captchaKey'),
+      captcha: (await context.secrets.get('captchaKey')),
       clientVersion: '7561851',
       format: 'pbuf',
       hCaptchaSiteKey: '473079ba-e99f-4e25-a635-e9b661c7dd3e',
@@ -228,8 +228,10 @@ export async function fetchToken(
 
   if (r.status > 399) {
     if (JSON.parse(text).message?.toLowerCase().indexOf('captcha failed') !== -1) {
+      throw new Error('yeet');
+      console.log('captcha refreshing...');
       if (await renderCaptchaRefresh(context)) {
-        return fetchToken(replId, context);
+        // return fetchToken(replId, context);
       }
     } else {
       throw new Error(
