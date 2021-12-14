@@ -1,6 +1,6 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
-  extends: ['airbnb', 'plugin:@typescript-eslint/recommended', 'prettier/@typescript-eslint'],
+  extends: ['airbnb/base', 'plugin:@typescript-eslint/recommended', 'prettier/@typescript-eslint'],
   plugins: ['@typescript-eslint', 'prettier'],
   settings: {
     'import/parsers': {
@@ -40,5 +40,6 @@ module.exports = {
     'object-curly-newline': 'off',
     'consistent-return': 'off',
     'no-console': 'off',
+    'lines-between-class-members': ['error', 'always', { exceptAfterSingleLine: true }],
   },
 };
