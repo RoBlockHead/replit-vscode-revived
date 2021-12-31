@@ -190,8 +190,7 @@ class ReplFs implements vscode.FileSystemProvider {
     if (res.channelClosed) {
       return this.callSoon(this.createDirectory, uri);
     }
-
-    handleError(res.error, uri);
+    if (res.error) handleError(res.error, uri);
 
     this.emitter.fire([
       { type: vscode.FileChangeType.Created, uri },
@@ -209,14 +208,15 @@ class ReplFs implements vscode.FileSystemProvider {
       return this.callSoon(this.readDirectory, uri);
     }
 
-    handleError(res.error, uri);
+    if (res.error) handleError(res.error, uri);
 
     if (!res.files?.files) {
       throw new Error('expected files.files');
     }
 
     // TODO do we subscribeFile here?
-
+    // remove the '.env' file from the list
+    res.files.files.filter(({ path }) => path.split('/')[2] !== '.env');
     return res.files.files.map(({ path, type }) => [path, apiToVscodeFileType(type)]);
   }
 
@@ -230,7 +230,7 @@ class ReplFs implements vscode.FileSystemProvider {
       return this.callSoon(this.readFile, uri);
     }
 
-    handleError(res.error, uri);
+    if (res.error) handleError(res.error, uri);
 
     if (!res.file || !res.file.path || !res.file.content) {
       throw new Error('Expected file');
@@ -253,7 +253,7 @@ class ReplFs implements vscode.FileSystemProvider {
       return this.callSoon(this.delete, uri, _options);
     }
 
-    handleError(res.error, uri);
+    if (res.error) handleError(res.error, uri);
 
     this.emitter.fire([
       { type: vscode.FileChangeType.Deleted, uri },
@@ -307,7 +307,7 @@ class ReplFs implements vscode.FileSystemProvider {
       return this.callSoon(this.rename, oldUri, newUri, options);
     }
 
-    handleError(res.error, oldUri);
+    if (res.error) handleError(res.error, oldUri);
 
     // TODO
     // vscode.FileChangeType.Deleted oldUri
@@ -331,7 +331,7 @@ class ReplFs implements vscode.FileSystemProvider {
       return this.callSoon(this.stat, uri);
     }
 
-    handleError(res.error, uri);
+    if (res.error) handleError(res.error, uri);
 
     if (!res.statRes) {
       throw new Error('expected stat result');
@@ -396,7 +396,7 @@ class ReplFs implements vscode.FileSystemProvider {
       return this.callSoon(this.writeFile, uri, content, options);
     }
 
-    handleError(res.error, uri);
+    if (res.error) handleError(res.error, uri);
 
     // Might as well do them all in one emit
     const evts: vscode.FileChangeEvent[] = [];
@@ -428,7 +428,7 @@ export class FS implements vscode.FileSystemProvider {
     this.replFsMap = {};
     const pendingClientReqs: { [replId: string]: Promise<CrosisClient> } = {};
     this.getReplClient = async (replId: string): Promise<CrosisClient> => {
-      if (pendingClientReqs[replId]) {
+      if (pendingClientReqs[replId] != null) {
         return pendingClientReqs[replId];
       }
 
@@ -500,6 +500,7 @@ export class FS implements vscode.FileSystemProvider {
   }
 
   async readFile(uri: vscode.Uri): Promise<Uint8Array> {
+    console.log(`File being read: ${uri.toString()}`);
     const replId = uri.authority;
 
     const fs = await this.getFsForReplId(replId);

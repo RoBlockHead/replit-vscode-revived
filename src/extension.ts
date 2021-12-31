@@ -145,15 +145,16 @@ function openReplClient(
             error: null,
           };
           return res;
-        } catch (e) {
-          if (e.name === 'AbortError') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (err: any) {
+          if (err.name === 'AbortError') {
             res = {
               error: FetchConnectionMetadataError.Aborted,
             };
           } else {
-            vscode.window.showErrorMessage(`${e}`);
+            vscode.window.showErrorMessage(`${err}`);
             res = {
-              error: e,
+              error: err,
             };
           }
           return res;
@@ -206,7 +207,7 @@ function openReplClient(
           statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
           statusBarItem.tooltip = 'Connection permanently disconnected';
           vscode.window.showWarningMessage(
-            `Repl.it: @${replInfo.user}/${replInfo.slug} connection permanently disconnected`,
+            `Replit: @${replInfo.user}/${replInfo.slug} connection permanently disconnected`,
           );
         }
       };
@@ -261,12 +262,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     let replInfo: ReplInfo;
     try {
       replInfo = await getReplInfo(replId, apiKey);
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
 
-      vscode.window.showErrorMessage(e.message || 'Error with no message, check console');
+      // vscode.window.showErrorMessage(err || 'Error with no message, check console');
 
-      throw e;
+      throw err;
     }
 
     return openReplClient(replInfo, context, apiKey);
@@ -424,10 +425,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       let replInfo: ReplInfo;
       try {
         replInfo = await getReplInfo(input, userSid);
-      } catch (e) {
-        console.error(e);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        console.error(err);
 
-        return vscode.window.showErrorMessage(e.message || 'Error with no message, check console');
+        return vscode.window.showErrorMessage(
+          err.message || 'Error with no message, check console',
+        );
       }
       if (!canUserEditRepl(userSid, replInfo.id)) {
         vscode.window.showWarningMessage(
