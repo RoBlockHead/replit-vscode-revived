@@ -170,6 +170,7 @@ function openReplClient(
         return;
       }
       statusBarItem.text = `$(link) Replit: @${replInfo.user}/${replInfo.slug}`;
+      statusBarItem.backgroundColor = undefined;
       result.channel.onCommand((cmd) => {
         if (cmd.portOpen?.forwarded) {
           const panel = vscode.window.createWebviewPanel(
