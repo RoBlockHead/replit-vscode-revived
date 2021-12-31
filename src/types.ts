@@ -21,3 +21,8 @@ export interface ReplProps {
   token: Promise<string>;
   engine: string;
 }
+
+  | FetchConnectionMetadataResult
+  | {
+      message: string;
+    };

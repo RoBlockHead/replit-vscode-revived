@@ -139,7 +139,7 @@ function openReplClient(
         let govalMeta: GovalMetadata;
         let res: FetchConnectionMetadataResult;
         try {
-          govalMeta = JSON.parse(await fetchToken(replInfo.id, context));
+          govalMeta = await fetchToken(replInfo.id, context);
           res = {
             ...govalMeta,
             error: null,
@@ -217,14 +217,15 @@ function openReplClient(
   openedRepls[replInfo.id] = { replInfo, client };
 
   if (replInfo.lang.engine === 'goval') {
+    if (!openedRepls[replInfo.id].output) {
     const output = new ReplitOutput(client);
-
+      openedRepls[replInfo.id].output = output;
     const outputTerminal = vscode.window.createTerminal({
       name: `Output: @${replInfo.user}/${replInfo.slug}`,
       pty: output,
     });
     outputTerminal.show();
-    openedRepls[replInfo.id].output = output;
+    }
   } else {
     vscode.window.showWarningMessage(
       `This repl is a ${replInfo.lang.engine} repl, so it has limited features.`,

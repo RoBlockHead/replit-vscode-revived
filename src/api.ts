@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import { GraphQLClient, gql } from 'graphql-request';
 import * as vscode from 'vscode';
+import { GovalMetadata } from '@replit/crosis';
 import { ReplInfo } from './types';
 import { renderCaptchaRefresh } from './captcha';
 
@@ -87,12 +88,15 @@ const ReplPerms = gql`
   }
 `;
 // Get a user's own repls
-export const getSelfRepls = async (userSid: string, count?: number): Promise<ReplInfo[]> => {
+export const getSelfRepls = async (
+  context: vscode.ExtensionContext,
+  count?: number,
+): Promise<ReplInfo[]> => {
   const result = await gqlClient.request(
     SelfRepls,
     { count: count || 10 },
     {
-      cookie: `connect.sid=${userSid}`,
+      cookie: `connect.sid=${await context.secrets.get('captchaKey')}`,
     },
   );
   if (!result.recentRepls) {
@@ -126,13 +130,13 @@ export const canUserEditRepl = async (userSid: string, replId: string): Promise<
   );
   if (result.repl.isOwner) {
     return true;
-  };
+  }
   for (let i = 0; i < result.repl.multiplayers.length; i += 1) {
     const multiplayer = result.repl.multiplayers[i];
     if (result.currentUser.id === multiplayer.id) {
       return true;
     }
-  };
+  }
   return false;
 };
 
@@ -206,7 +210,7 @@ export async function getReplInfo(input: string, userSid?: string): Promise<Repl
 export async function fetchToken(
   replId: string,
   context: vscode.ExtensionContext,
-): Promise<string> {
+): Promise<GovalMetadata> {
   console.log(`fetching token for ${replId}`);
   const r = await fetch(`https://replit.com/data/repls/${replId}/get_connection_metadata`, {
     headers: {
@@ -218,36 +222,27 @@ export async function fetchToken(
     },
     method: 'POST',
     body: JSON.stringify({
-      captcha: (await context.secrets.get('captchaKey')),
+      captcha: await context.secrets.get('captchaKey'),
       clientVersion: '7561851',
       format: 'pbuf',
       hCaptchaSiteKey: '473079ba-e99f-4e25-a635-e9b661c7dd3e',
     }),
   });
-  const text = await r.text();
-
-  if (r.status > 399) {
-    if (JSON.parse(text).message?.toLowerCase().indexOf('captcha failed') !== -1) {
-      throw new Error('yeet');
-      console.log('captcha refreshing...');
+  const replToken: {
+    token?: string;
+    gurl?: string;
+    conmanURL?: string;
+    message?: string;
+  } = await r.json();
+  if (!replToken.token) {
+    if (replToken.message && replToken.message.toLowerCase().indexOf('captcha failed') !== -1) {
+      console.log('CAPTCHA Refreshing...');
       if (await renderCaptchaRefresh(context)) {
-        // return fetchToken(replId, context);
+        return fetchToken(replId, context);
       }
-    } else {
-      throw new Error(
-        `Repl.it: ${r.status} Error Failed to open Repl. Error: ${JSON.parse(text).message}`,
-      );
+      throw new Error('Replit: Captcha Refresh Failed');
     }
+    throw new Error(`Replit: Error: ${replToken.message}`);
   }
-  console.log(`Token Obtained: ${text}`);
-
-  let res;
-  try {
-    res = JSON.parse(text);
-    // console.log(res.token);
-  } catch (e) {
-    throw new Error(`Invalid JSON while fetching token for ${replId}: ${JSON.stringify(text)}`);
-  }
-
-  return JSON.stringify(res);
+  return <GovalMetadata>replToken;
 }
