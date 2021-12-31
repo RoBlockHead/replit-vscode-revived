@@ -1,7 +1,9 @@
 /* eslint-disable max-len */
 import * as vscode from 'vscode';
 
-export const renderCaptchaRefresh = async (context: vscode.ExtensionContext): Promise<boolean|void> => {
+export const renderCaptchaRefresh = async (
+  context: vscode.ExtensionContext,
+): Promise<boolean | void> => {
   const captchaWebview = vscode.window.createWebviewPanel(
     'captchaWebview',
     'Replit CAPTCHA Refresh',
@@ -21,22 +23,27 @@ export const renderCaptchaRefresh = async (context: vscode.ExtensionContext): Pr
   <head>
   <meta http-equiv="Content-Security-Policy" content="default-src 'unsafe-inline' ${captchaWebview.webview.cspSource} https:;">
   <style>
+  :root {
+    overflow: scroll;
+  }
   body {
     margin: 0;
     border: 0;
-    width: 100%
+    width: 100%;
   }
   iframe {
     margin: 0;
     border: 0;
-    width: 100%
+    width: 100%;
+    height: 500px;
+    overflow: visible;
   }
   </style>
   </head>
   <body>
   <h1>Refresh your Replit CAPTCHA verification</h1>
   <h3>Click the box below to refresh your human verification. This window will close when you've completed the verification.</h3>
-  <iframe src="https://vsc-captcha.vscode.repl.co"></iframe>
+  <iframe src="https://vsc-captcha.vscode.repl.co" height="300px"></iframe>
   <script>
   const vscode = acquireVsCodeApi();
   console.log(window);

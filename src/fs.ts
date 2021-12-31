@@ -27,12 +27,12 @@ function replIdFromUri({ path }: vscode.Uri): string {
 }
 
 const ROOT_API_PATH = '.';
-function uriToApiPath({ path }: vscode.Uri): string {
-  if (path === '/') {
+function uriToApiPath(uri: vscode.Uri): string {
+  if (uri.path === '/') {
     return ROOT_API_PATH;
   }
-
-  return path.replace(/^\//, '');
+  // if (uri.)
+  return uri.path.replace(/^\//, '');
 }
 
 function apiToVscodeFileType(type: api.File.Type): vscode.FileType {
@@ -45,6 +45,7 @@ function apiToVscodeFileType(type: api.File.Type): vscode.FileType {
 }
 
 function getParentURI(uri: vscode.Uri): vscode.Uri {
+  console.log(`ParentURI ${uri.toString()}: ${posixPath.dirname(uri.path)}`);
   return vscode.Uri.parse(`replit://${posixPath.dirname(uri.path)}`);
 }
 
