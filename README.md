@@ -1,3 +1,7 @@
+# This extension is abandoned.
+
+As of 2022, this project has been abandoned and will no longer receive any updates. This comes as a result of Replit's anti-user practices. I will no longer be providing any support for this extension. This repository will serve as a public archive for anyone that wishes to view the source code.
+
 # Replit (unofficial) VSCode Extension
 
 [![Support Server](https://img.shields.io/discord/850042160786309180.svg?label=Discord&logo=Discord&colorB=7289da&style=for-the-badge)](https://discord.gg/yXs2ZgEzJQ)
